@@ -1,0 +1,43 @@
+name: Verify SwitchProof
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.0"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install Python dependencies
+        run: uv sync --python 3.12 --locked
+      - name: Lint Python
+        run: uv run ruff check switchproof tests
+      - name: Build dashboard
+        run: |
+          npm --prefix web ci --no-audit --no-fund
+          npm --prefix web run build
+      - name: Run unit and API tests
+        run: uv run python -m pytest -q -m 'not integration'
+      - name: Start disposable databases
+        run: docker compose up -d --wait --wait-timeout 180
+      - name: Run real database integration tests
+        run: uv run python -m pytest -q -m integration
+      - name: Show database diagnostics on failure
+        if: failure()
+        run: docker compose logs --tail 100
+      - name: Stop disposable databases
+        if: always()
+        run: docker compose down
