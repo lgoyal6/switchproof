@@ -1,6 +1,7 @@
 import json
 import threading
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime, timedelta
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request
@@ -9,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from .config import ROOT
+from .config import ALLOWED_HOSTS, PUBLIC_RUN_LIMIT, ROOT
 from .db import falkor, neo_query
 from .engine import RUNS, new_report, run_investigation, save
 
@@ -27,7 +28,7 @@ async def lifespan(app):
 
 
 app = FastAPI(title="SwitchProof", lifespan=lifespan)
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 
 
 @app.middleware("http")
@@ -44,6 +45,22 @@ class Start(BaseModel):
     use_memory: bool = True
 
 
+def enforce_run_budget():
+    if not PUBLIC_RUN_LIMIT:
+        return
+    cutoff = datetime.now(UTC) - timedelta(hours=1)
+    recent = 0
+    for path in RUNS.glob("*.json"):
+        saved = json.loads(path.read_text())
+        if datetime.fromisoformat(saved["created_at"]) >= cutoff:
+            recent += 1
+    if recent >= PUBLIC_RUN_LIMIT:
+        raise HTTPException(
+            429,
+            "The public demo has reached its hourly run limit. Explore a saved report or try again later.",
+        )
+
+
 @app.get("/api/health")
 def health():
     checks = {}
@@ -56,7 +73,8 @@ def health():
             checks[name] = True
         except Exception:
             checks[name] = False
-    return {"ready": all(checks.values()), "databases": checks, "busy": busy.locked()}
+    result = {"ready": all(checks.values()), "databases": checks, "busy": busy.locked()}
+    return JSONResponse(result, status_code=200 if result["ready"] else 503)
 
 
 @app.get("/api/runs")
@@ -93,6 +111,11 @@ def receipt(run_id: str):
 def start(options: Start):
     if not busy.acquire(blocking=False):
         raise HTTPException(409, "An investigation is already using the disposable source database")
+    try:
+        enforce_run_budget()
+    except HTTPException:
+        busy.release()
+        raise
     report = new_report()
     report["origin"] = "api"
     save(report)

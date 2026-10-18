@@ -278,7 +278,7 @@ def _run_investigation(report, provider="anthropic", use_memory=True, movies=240
                 correct = green(report["post_benchmark"]) and report["benchmark"]["status"] == "passed"
         report["status"] = "verified" if correct else "needs_attention"
         report["scope"] = (
-            "Finite local comparisons on a synthetic fixture using the pinned Movies handlers. "
+            "Finite workload comparisons on a synthetic fixture using the pinned Movies handlers. "
             "One nondeterministic case remains inconclusive. Not universal migration proof."
         )
         context.finish(run_id, report["status"])

@@ -1,6 +1,7 @@
 """Small sequential client runner. Correctness gates are enforced by the orchestrator."""
 
 import math
+import os
 import statistics
 import subprocess
 import time
@@ -60,31 +61,41 @@ def benchmark(graph, overrides, repeats=20, warmups=3):
                 )
                 output.append(row)
     client.connection.close()
-    memory = subprocess.run(
-        [
-            "docker",
-            "stats",
-            "--no-stream",
-            "--format",
-            "{{json .}}",
-            "switchproof-neo4j-1",
-            "switchproof-falkor-1",
-        ],
-        capture_output=True,
-        text=True,
-        timeout=15,
-    )
+    memory_snapshot = []
+    memory_note = "Docker cgroup snapshot"
+    try:
+        memory = subprocess.run(
+            [
+                "docker",
+                "stats",
+                "--no-stream",
+                "--format",
+                "{{json .}}",
+                "switchproof-neo4j-1",
+                "switchproof-falkor-1",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        if memory.returncode == 0:
+            memory_snapshot = memory.stdout.splitlines()
+        else:
+            memory_note = "Memory snapshot unavailable on this host"
+    except (OSError, subprocess.TimeoutExpired):
+        memory_note = "Docker memory telemetry unavailable in hosted runtime"
     return {
         "runner": "SwitchProof Python client fallback",
         "repeats": repeats,
         "warmups": warmups,
         "concurrency": 1,
-        "resource_caps": "2 CPUs and 1 GiB per Docker service",
-        "scope": "Local synthetic fixture, warm connections, end-to-end client latency. "
+        "resource_caps": os.environ.get("SWITCHPROOF_RESOURCE_CAPS", "2 CPUs and 1 GiB per Docker service"),
+        "scope": "Synthetic fixture, warm connections, end-to-end client latency on the recorded runtime. "
         "Not a production benchmark or a universal engine comparison.",
         "upstream_runner_note": "Pinned FalkorDB/benchmark build blocked by missing protoc; "
         "this run uses the documented Python fallback.",
-        "memory_snapshot": memory.stdout.splitlines(),
+        "memory_snapshot": memory_snapshot,
+        "memory_note": memory_note,
         "queries": output,
         "status": "passed" if all(not r["errors"] for r in output) else "errors",
     }
