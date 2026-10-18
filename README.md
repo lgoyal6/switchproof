@@ -8,6 +8,10 @@ A live Claude Sonnet 4.6 run selected four repairs and passed all 11 determinist
 
 The dependency graph does work: FalkorDB traversals select the failures and schema dependencies sent to the planner, find affected readers, and retrieve previously verified repair recipes. A remembered repair must pass current source preconditions and fresh comparisons again.
 
+Live demo: https://web-production-d8fe1.up.railway.app
+
+The hosted demo runs the API, Neo4j, and FalkorDB on Railway with persistent volumes. It allows eight investigations per hour across visitors. Anthropic credentials stay server-side. Hosting resource caps are recorded separately from local Docker caps and are not an equal-resource performance comparison.
+
 ## Run locally
 
 Requires Docker Compose, Python 3.12, `uv`, Node 22 or newer, and npm. This is a local lab with a fixed workload, not an arbitrary repository importer. The source database is disposable and recreated on each investigation.
@@ -22,7 +26,7 @@ Create `.env` in this folder with a working `ANTHROPIC_API_KEY`. An optional `SW
 ./scripts/dev.sh
 ```
 
-Open [localhost:18765](http://127.0.0.1:18765). Select **Run investigation**. The dashboard provides baseline and final results, query changes, graph evidence, application checks, candidate rejections, benchmarks, and a downloadable JSON receipt.
+Open [localhost:18765](http://127.0.0.1:18765). Select **Run demo**, then **Run investigation** in the settings dialog. The workbench opens on queries that changed after import, with source/target comparisons, typed result evidence, and the verified migration verdict. It also provides graph dependencies, application checks, rejected repair trials, local benchmarks, run history, and a downloadable JSON receipt. **What this does** explains the product and its Movies-only scope.
 
 The optional Zero provider uses an existing authenticated, funded `zero` installation. It discovers and inspects its configured capability before each call, caps each call at $0.01, and reviews recorded calls. It does not create accounts or wallets. Provider failures stop the run and retain its partial evidence; no simulated model response is substituted.
 
@@ -64,7 +68,7 @@ Unordered collections are compared as multisets. Graph node positions are normal
 
 Receipts live in `~/.local/state/switchproof/runs/` by default, outside the repository. `SWITCHPROOF_STATE_DIR` changes this location. Receipts bind the source manifest, upstream revision, engine versions, queries and parameters, result hashes, typed differences, graph-selected planner input, model provenance, trials, raw timing samples, and a final SHA-256 digest. Hash the JSON excluding its `receipt_hash` field to verify it using the canonical serializer in `switchproof.compare`.
 
-The benchmark uses persistent official-client connections, 3 warmups and 20 samples per engine per deterministic query. It alternates engine order, consumes results, records errors, and reports median and p95 client latency. Both Docker services have 2-CPU and 1-GiB caps. A Docker memory snapshot is retained, not presented as peak memory or JVM-equivalent usage. The full workload runs again after measurement.
+The benchmark uses persistent official-client connections, 3 warmups and 20 samples per engine per deterministic query. It alternates engine order, consumes results, records errors, and reports median and p95 client latency. For the local Compose setup, both Docker services have 2-CPU and 1-GiB caps. A Docker memory snapshot is retained, not presented as peak memory or JVM-equivalent usage. The full workload runs again after measurement.
 
 The pinned upstream Rust benchmark was investigated but could not build without `protoc`. This implementation uses the planned small Python fallback; it does not claim upstream-runner results. Small local synthetic timings do not establish a production speedup.
 
