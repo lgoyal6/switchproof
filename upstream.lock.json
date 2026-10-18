@@ -1,0 +1,39 @@
+{
+  "migration": {
+    "repo": "FalkorDB/Neo4j-to-FalkorDB",
+    "commit": "6ca9309cbf59690b3588db54b08ad48cad938880",
+    "files": [
+      "falkordb_csv_loader.py",
+      "neo4j_to_csv_extractor.py",
+      "LICENSE",
+      "requirements.txt"
+    ],
+    "sha256": {
+      "LICENSE": "ab1d2da0eaee9a8f523ddbd6c3f432b38716140dd917eefef91b1a2633a687d0",
+      "requirements.txt": "e27c9d78da7f424e64c5684bb7d5e702616c3a2a01c21f60498f2c3000ebb56c",
+      "neo4j_to_csv_extractor.py": "43346a86d8169521e10fac6b80b63cb18ef299908e3a8dfbaeccfa44a5ac3dd7",
+      "falkordb_csv_loader.py": "0e77efcc458de78a386d076cf2504a2155a6d18660180aba4c1d9a98acf48aeb"
+    }
+  },
+  "movies": {
+    "repo": "neo4j-examples/movies-python-bolt",
+    "commit": "f86445ed1e9b5b12fb1b2faade5e209d6feec9b1",
+    "files": [
+      "movies_sync.py",
+      "LICENSE",
+      "README.adoc"
+    ],
+    "sha256": {
+      "movies_sync.py": "6f8840f070fb1f79d5e0c39df6efd324729f84d2c3d7507861e087347228c13a",
+      "LICENSE": "aac73b3148f6d1d7111dbca32099f68d26c644c6813ae1e4f05f6579aa2663fe",
+      "README.adoc": "f77654b8be8450906135806b22987463f2f21532dda3b8d9b70aeb4ecfbd73b2"
+    }
+  },
+  "benchmark_reference": {
+    "repo": "FalkorDB/benchmark",
+    "commit": "e1cc4559d5a65c95921297f28e9cb320c18a61f0",
+    "license": "MIT",
+    "executed": false,
+    "reason": "Rust build requires missing protoc; Python fallback used"
+  }
+}
